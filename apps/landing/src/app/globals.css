@@ -1,0 +1,35 @@
+@import "@neocrypt/ui/styles.css";
+
+html {
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.hero-gradient {
+  background: linear-gradient(135deg, 
+    rgba(16, 185, 129, 0.1) 0%, 
+    rgba(20, 184, 166, 0.1) 25%, 
+    rgba(59, 130, 246, 0.1) 50%, 
+    rgba(147, 51, 234, 0.1) 75%, 
+    rgba(249, 115, 22, 0.1) 100%
+  );
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+@media (max-width: 768px) {
+  .app-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+}

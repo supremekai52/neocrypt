@@ -1,0 +1,272 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  role        Role     @default(VIEWER)
+  orgId       String?
+  organization Organization? @relation(fields: [orgId], references: [id])
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  collectionEvents CollectionEvent[]
+  processingSteps  ProcessingStep[]
+  qualityTests     QualityTest[]
+  
+  @@map("users")
+}
+
+model Organization {
+  id            String           @id @default(cuid())
+  name          String
+  type          OrganizationType
+  licenseNumber String?
+  address       String
+  geohash       String?
+  contactEmail  String
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  users         User[]
+  collectionEvents CollectionEvent[]
+  processingSteps  ProcessingStep[]
+  qualityTests     QualityTest[]
+  custodyEventsFrom CustodyEvent[] @relation("CustodyFrom")
+  custodyEventsTo   CustodyEvent[] @relation("CustodyTo")
+  batches          Batch[]
+  
+  @@map("organizations")
+}
+
+model CollectionEvent {
+  id               String    @id @default(cuid())
+  speciesCode      String
+  speciesName      String
+  part             PlantPart
+  orgId            String
+  collectorId      String
+  timestamp        DateTime
+  lat              Float
+  lon              Float
+  geohash          String
+  gpsAccuracy      Float
+  harvestMethod    HarvestMethod
+  permitsRef       String?
+  mediaRefs        String[]
+  moisturePct      Float
+  foreignMatterPct Float?
+  rulesVersion     String
+  regionId         String
+  weightKg         Float
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization     Organization @relation(fields: [orgId], references: [id])
+  collector        User         @relation(fields: [collectorId], references: [id])
+  batchInputs      BatchInput[]
+  
+  @@map("collection_events")
+}
+
+model ProcessingStep {
+  id              String      @id @default(cuid())
+  inputRefs       String[]
+  type            ProcessingType
+  timestampStart  DateTime
+  timestampEnd    DateTime
+  tempC           Float?
+  humidityPct     Float?
+  durationHrs     Float?
+  facilityId      String
+  locationGeohash String
+  operatorId      String
+  mediaRefs       String[]
+  outputWeightKg  Float
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  facility        Organization @relation(fields: [facilityId], references: [id])
+  operator        User         @relation(fields: [operatorId], references: [id])
+  batchInputs     BatchInput[]
+  
+  @@map("processing_steps")
+}
+
+model QualityTest {
+  id                     String    @id @default(cuid())
+  subjectRef             String
+  labOrgId               String
+  testType               TestType
+  specVersion            String
+  resultValue            String
+  resultUnit             String?
+  pass                   Boolean
+  methodRef              String?
+  artifactRef            String
+  artifactHash           String
+  verifiableCredentialRef String?
+  timestamp              DateTime
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  labOrganization        Organization @relation(fields: [labOrgId], references: [id])
+  
+  @@map("quality_tests")
+}
+
+model CustodyEvent {
+  id            String   @id @default(cuid())
+  fromOrgId     String
+  toOrgId       String
+  subjectRefs   String[]
+  weighmentKg   Float
+  transportMeta Json?
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fromOrganization Organization @relation("CustodyFrom", fields: [fromOrgId], references: [id])
+  toOrganization   Organization @relation("CustodyTo", fields: [toOrgId], references: [id])
+  
+  @@map("custody_events")
+}
+
+model Batch {
+  id                String      @id @default(cuid())
+  manufacturerOrgId String
+  lotCode           String
+  qaGates           String[]
+  status            BatchStatus @default(DRAFT)
+  qrSerial          String?     @unique
+  publicSlug        String?     @unique
+  recallReason      String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  manufacturerOrg   Organization @relation(fields: [manufacturerOrgId], references: [id])
+  inputs            BatchInput[]
+  scanEvents        ScanEvent[]
+  
+  @@map("batches")
+}
+
+model BatchInput {
+  id                  String  @id @default(cuid())
+  batchId             String
+  refId               String
+  refType             String  // 'collection' or 'processing'
+  weightKg            Float
+  createdAt           DateTime @default(now())
+
+  batch               Batch            @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  collectionEvent     CollectionEvent? @relation(fields: [refId], references: [id])
+  processingStep      ProcessingStep?  @relation(fields: [refId], references: [id])
+  
+  @@map("batch_inputs")
+}
+
+model RuleSet {
+  id               String   @id @default(cuid())
+  speciesCode      String
+  regionId         String
+  geohashPrefixes  String[]
+  seasons          Json[]   // [{start: "MM-DD", end: "MM-DD"}]
+  quotaPerSeason   Int
+  version          String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([speciesCode, regionId])
+  @@map("rule_sets")
+}
+
+model QuotaCounter {
+  id         String @id @default(cuid())
+  species    String
+  region     String
+  seasonId   String
+  used       Float  @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([species, region, seasonId])
+  @@map("quota_counters")
+}
+
+model ScanEvent {
+  id         String   @id @default(cuid())
+  batchId    String?
+  slug       String?
+  userAgent  String?
+  ipAddress  String?
+  timestamp  DateTime @default(now())
+
+  batch      Batch? @relation(fields: [batchId], references: [id])
+  
+  @@map("scan_events")
+}
+
+// Enums
+enum Role {
+  FARMER
+  PROCESSOR
+  LAB
+  MANUFACTURER
+  REGULATOR
+  VIEWER
+}
+
+enum OrganizationType {
+  FARM_COOP
+  PROCESSOR
+  LAB
+  MANUFACTURER
+  REGULATOR
+}
+
+enum PlantPart {
+  ROOT
+  LEAF
+  SEED
+  BARK
+  FLOWER
+  WHOLE_PLANT
+}
+
+enum HarvestMethod {
+  CULTIVATED
+  WILD
+}
+
+enum ProcessingType {
+  DRYING
+  GRINDING
+  STORAGE
+  PACKING
+}
+
+enum TestType {
+  MOISTURE
+  PESTICIDE
+  DNA
+  HEAVY_METAL
+  MICROBIAL
+}
+
+enum BatchStatus {
+  DRAFT
+  MINTED
+  RELEASED
+  FLAGGED
+  RECALLED
+}

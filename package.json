@@ -1,0 +1,38 @@
+{
+  "name": "neocrypt-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy-contracts": "hardhat run scripts/deploy.js --network localhost",
+    "start-blockchain": "hardhat node",
+    "test": "hardhat test"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.0",
+    "ethers": "^6.9.0",
+    "web3": "^4.3.0",
+    "axios": "^1.6.0",
+    "qrcode": "^1.5.3",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1",
+    "date-fns": "^2.30.0",
+    "lucide-react": "^0.344.0",
+    "framer-motion": "^10.16.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.0.8",
+    "hardhat": "^2.19.0",
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
+  }
+}
